@@ -3,10 +3,6 @@
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
-    return view('welcome');
-})->name('home');
-
-Route::get('dashboard', function () {
     if (! auth()->user()->isAdmin()) {
         return redirect()->route('meu-ponto.index');
     }
