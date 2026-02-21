@@ -45,6 +45,18 @@ new class extends Component {
         session()->flash('message', 'Nota fiscal cancelada com sucesso!');
     }
 
+    public function toggleStatus(int $id)
+    {
+        $nota = NotaFiscal::findOrFail($id);
+
+        if ($nota->status === 'cancelada') {
+            return;
+        }
+
+        $nota->status = $nota->status === 'rascunho' ? 'emitida' : 'rascunho';
+        $nota->save();
+    }
+
     public function with(): array
     {
         $notas = NotaFiscal::query()
@@ -125,9 +137,9 @@ new class extends Component {
                         <flux:table.cell class="font-medium">R$ {{ number_format($nota->valor_total, 2, ',', '.') }}</flux:table.cell>
                         <flux:table.cell>
                             @if ($nota->status === 'emitida')
-                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">Emitida</span>
+                                <span wire:click="toggleStatus({{ $nota->id }})" class="cursor-pointer inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">Emitida</span>
                             @elseif ($nota->status === 'rascunho')
-                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">Rascunho</span>
+                                <span wire:click="toggleStatus({{ $nota->id }})" class="cursor-pointer inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">Rascunho</span>
                             @else
                                 <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">Cancelada</span>
                             @endif

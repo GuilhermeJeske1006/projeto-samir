@@ -58,9 +58,15 @@ new class extends Component {
         $this->totalHoras = 0;
         $this->valorTotal = 0;
 
-        if ($this->tipo === 'servico' && !$this->local_id) return;
-        if ($this->tipo === 'recibo' && !$this->funcionario_id) return;
-        if (!$this->periodo_inicio || !$this->periodo_fim) return;
+        if ($this->tipo === 'servico' && !$this->local_id) {
+            return;
+        }
+        if ($this->tipo === 'recibo' && !$this->funcionario_id) {
+            return;
+        }
+        if (!$this->periodo_inicio || !$this->periodo_fim) {
+            return;
+        }
 
         $query = RegistroHora::query()
             ->with(['local', 'funcionario'])
@@ -130,104 +136,112 @@ new class extends Component {
     public function with(): array
     {
         return [
-            'locais' => Local::orderBy('nome')->get(),
-            'funcionarios' => Funcionario::orderBy('nome')->get(),
+            'locais' => Local::ativos()->orderBy('nome')->get(),
+            'funcionarios' => Funcionario::ativos()->orderBy('nome')->get(),
         ];
     }
 }; ?>
 
 <x-layouts::app :title="'Nova Nota Fiscal'">
     @volt('notas-fiscais.create')
-    <div class="p-6 max-w-4xl">
-        <flux:heading size="xl" class="mb-6">Nova Nota Fiscal</flux:heading>
+        <div class="p-6 max-w-4xl">
+            <flux:heading size="xl" class="mb-6">Nova Nota Fiscal</flux:heading>
 
-        @if (session('error'))
-            <flux:callout variant="danger" class="mb-4">
-                {{ session('error') }}
-            </flux:callout>
-        @endif
-
-        <form wire:submit="emitir" class="space-y-6">
-            <flux:select wire:model.live="tipo" label="Tipo de Documento" required>
-                <flux:select.option value="servico">Nota de Serviço (para Cliente/Local)</flux:select.option>
-                <flux:select.option value="recibo">Recibo de Pagamento (para Funcionário)</flux:select.option>
-            </flux:select>
-
-            @if ($tipo === 'servico')
-                <flux:select wire:model.live="local_id" label="Local / Cliente" required>
-                    <flux:select.option value="">Selecione um local</flux:select.option>
-                    @foreach ($locais as $local)
-                        <flux:select.option value="{{ $local->id }}">{{ $local->nome }}{{ $local->cnpj ? ' - ' . $local->cnpj : '' }}</flux:select.option>
-                    @endforeach
-                </flux:select>
-            @else
-                <flux:select wire:model.live="funcionario_id" label="Funcionário" required>
-                    <flux:select.option value="">Selecione um funcionário</flux:select.option>
-                    @foreach ($funcionarios as $funcionario)
-                        <flux:select.option value="{{ $funcionario->id }}">{{ $funcionario->nome }}</flux:select.option>
-                    @endforeach
-                </flux:select>
-            @endif
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <flux:input wire:model.live="periodo_inicio" type="date" label="Período Início" required />
-                <flux:input wire:model.live="periodo_fim" type="date" label="Período Fim" required />
-            </div>
-
-            <flux:textarea wire:model="descricao" label="Descrição do Serviço" rows="2" required />
-
-            <flux:textarea wire:model="observacao" label="Observação" placeholder="Observações adicionais..." rows="2" />
-
-            <!-- Preview dos registros -->
-            @if (!empty($registrosPreview))
-                <div class="bg-white dark:bg-zinc-800 rounded-lg border border-zinc-200 dark:border-zinc-700 p-4">
-                    <flux:heading size="lg" class="mb-4">Registros Incluídos ({{ count($registrosPreview) }})</flux:heading>
-
-                    <flux:table>
-                        <flux:table.columns>
-                            <flux:table.column>Data</flux:table.column>
-                            @if ($tipo === 'servico')
-                                <flux:table.column>Funcionário</flux:table.column>
-                            @else
-                                <flux:table.column>Local</flux:table.column>
-                            @endif
-                            <flux:table.column>Horas</flux:table.column>
-                            <flux:table.column>Valor</flux:table.column>
-                        </flux:table.columns>
-                        <flux:table.rows>
-                            @foreach ($registrosPreview as $reg)
-                                <flux:table.row>
-                                    <flux:table.cell>{{ \Carbon\Carbon::parse($reg['data'])->format('d/m/Y') }}</flux:table.cell>
-                                    @if ($tipo === 'servico')
-                                        <flux:table.cell>{{ $reg['funcionario']['nome'] ?? '-' }}</flux:table.cell>
-                                    @else
-                                        <flux:table.cell>{{ $reg['local']['nome'] ?? '-' }}</flux:table.cell>
-                                    @endif
-                                    <flux:table.cell>{{ number_format($reg['horas'], 2, ',', '.') }}h</flux:table.cell>
-                                    <flux:table.cell class="font-medium">
-                                        R$ {{ number_format($reg['horas'] * ($tipo === 'servico' ? $reg['valor_hora_local'] : $reg['valor_hora_funcionario']), 2, ',', '.') }}
-                                    </flux:table.cell>
-                                </flux:table.row>
-                            @endforeach
-                        </flux:table.rows>
-                    </flux:table>
-
-                    <div class="mt-4 flex justify-end gap-6 text-lg font-bold">
-                        <span>Total: {{ number_format($totalHoras, 2, ',', '.') }}h</span>
-                        <span class="text-green-600 dark:text-green-400">R$ {{ number_format($valorTotal, 2, ',', '.') }}</span>
-                    </div>
-                </div>
-            @elseif (($tipo === 'servico' && $local_id) || ($tipo === 'recibo' && $funcionario_id))
-                <flux:callout variant="warning">
-                    Nenhum registro de horas pendente encontrado para o período selecionado.
+            @if (session('error'))
+                <flux:callout variant="danger" class="mb-4">
+                    {{ session('error') }}
                 </flux:callout>
             @endif
 
-            <div class="flex gap-4">
-                <flux:button type="submit" variant="primary" :disabled="empty($registrosPreview)">Emitir Nota</flux:button>
-                <flux:button href="{{ route('notas-fiscais.index') }}" wire:navigate variant="ghost">Cancelar</flux:button>
-            </div>
-        </form>
-    </div>
+            <form wire:submit="emitir" class="space-y-6">
+                <flux:select wire:model.live="tipo" label="Tipo de Documento" required>
+                    <flux:select.option value="servico">Nota de Serviço (para Cliente/Local)</flux:select.option>
+                    <flux:select.option value="recibo">Recibo de Pagamento (para Funcionário)</flux:select.option>
+                </flux:select>
+
+                @if ($tipo === 'servico')
+                    <flux:select wire:model.live="local_id" label="Local / Cliente" required>
+                        <flux:select.option value="">Selecione um local</flux:select.option>
+                        @foreach ($locais as $local)
+                            <flux:select.option value="{{ $local->id }}">
+                                {{ $local->nome }}{{ $local->cnpj ? ' - ' . $local->cnpj : '' }}</flux:select.option>
+                        @endforeach
+                    </flux:select>
+                @else
+                    <flux:select wire:model.live="funcionario_id" label="Funcionário" required>
+                        <flux:select.option value="">Selecione um funcionário</flux:select.option>
+                        @foreach ($funcionarios as $funcionario)
+                            <flux:select.option value="{{ $funcionario->id }}">{{ $funcionario->nome }}</flux:select.option>
+                        @endforeach
+                    </flux:select>
+                @endif
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <flux:input wire:model.live="periodo_inicio" type="date" label="Período Início" required />
+                    <flux:input wire:model.live="periodo_fim" type="date" label="Período Fim" required />
+                </div>
+
+                <flux:textarea wire:model="descricao" label="Descrição do Serviço" rows="2" required />
+
+                <flux:textarea wire:model="observacao" label="Observação" placeholder="Observações adicionais..."
+                    rows="2" />
+
+                <!-- Preview dos registros -->
+                @if (!empty($registrosPreview))
+                    <div class="bg-white dark:bg-zinc-800 rounded-lg border border-zinc-200 dark:border-zinc-700 p-4">
+                        <flux:heading size="lg" class="mb-4">Registros Incluídos ({{ count($registrosPreview) }})
+                        </flux:heading>
+
+                        <flux:table>
+                            <flux:table.columns>
+                                <flux:table.column>Data</flux:table.column>
+                                @if ($tipo === 'servico')
+                                    <flux:table.column>Funcionário</flux:table.column>
+                                @else
+                                    <flux:table.column>Local</flux:table.column>
+                                @endif
+                                <flux:table.column>Horas</flux:table.column>
+                                <flux:table.column>Valor</flux:table.column>
+                            </flux:table.columns>
+                            <flux:table.rows>
+                                @foreach ($registrosPreview as $reg)
+                                    <flux:table.row>
+                                        <flux:table.cell>{{ \Carbon\Carbon::parse($reg['data'])->format('d/m/Y') }}
+                                        </flux:table.cell>
+                                        @if ($tipo === 'servico')
+                                            <flux:table.cell>{{ $reg['funcionario']['nome'] ?? '-' }}</flux:table.cell>
+                                        @else
+                                            <flux:table.cell>{{ $reg['local']['nome'] ?? '-' }}</flux:table.cell>
+                                        @endif
+                                        <flux:table.cell>{{ number_format($reg['horas'], 2, ',', '.') }}h</flux:table.cell>
+                                        <flux:table.cell class="font-medium">
+                                            R$
+                                            {{ number_format($reg['horas'] * ($tipo === 'servico' ? $reg['valor_hora_local'] : $reg['valor_hora_funcionario']), 2, ',', '.') }}
+                                        </flux:table.cell>
+                                    </flux:table.row>
+                                @endforeach
+                            </flux:table.rows>
+                        </flux:table>
+
+                        <div class="mt-4 flex justify-end gap-6 text-lg font-bold">
+                            <span>Total: {{ number_format($totalHoras, 2, ',', '.') }}h</span>
+                            <span class="text-green-600 dark:text-green-400">R$
+                                {{ number_format($valorTotal, 2, ',', '.') }}</span>
+                        </div>
+                    </div>
+                @elseif (($tipo === 'servico' && $local_id) || ($tipo === 'recibo' && $funcionario_id))
+                    <flux:callout variant="warning">
+                        Nenhum registro de horas pendente encontrado para o período selecionado.
+                    </flux:callout>
+                @endif
+
+                <div class="flex gap-4">
+                    <flux:button type="submit" variant="primary" :disabled="empty($registrosPreview)">Emitir Nota
+                    </flux:button>
+                    <flux:button href="{{ route('notas-fiscais.index') }}" wire:navigate variant="ghost">Cancelar
+                    </flux:button>
+                </div>
+            </form>
+        </div>
     @endvolt
 </x-layouts::app>
