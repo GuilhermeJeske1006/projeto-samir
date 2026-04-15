@@ -85,11 +85,24 @@ new class extends Component {
 
             <flux:switch wire:model="ativo" label="Ativo" />
 
-            <flux:select wire:model="funcionarios_selecionados" label="Funcionários Vinculados" multiple>
-                @foreach ($funcionarios as $funcionario)
-                    <flux:select.option value="{{ $funcionario->id }}">{{ $funcionario->nome }}</flux:select.option>
-                @endforeach
-            </flux:select>
+            <div>
+                <flux:label>
+                    Funcionários Vinculados
+                    @if (count($funcionarios_selecionados) > 0)
+                        <flux:badge size="sm" class="ml-2">{{ count($funcionarios_selecionados) }} selecionado{{ count($funcionarios_selecionados) > 1 ? 's' : '' }}</flux:badge>
+                    @endif
+                </flux:label>
+                <div class="mt-1.5 border border-zinc-200 dark:border-zinc-700 rounded-lg divide-y divide-zinc-100 dark:divide-zinc-800 max-h-52 overflow-y-auto">
+                    @forelse ($funcionarios as $funcionario)
+                        <label class="flex items-center gap-3 px-3 py-2.5 hover:bg-zinc-50 dark:hover:bg-zinc-800/60 cursor-pointer transition-colors">
+                            <flux:checkbox wire:model="funcionarios_selecionados" value="{{ $funcionario->id }}" />
+                            <span class="text-sm text-zinc-700 dark:text-zinc-300">{{ $funcionario->nome }}</span>
+                        </label>
+                    @empty
+                        <p class="px-3 py-4 text-sm text-zinc-400 dark:text-zinc-500 text-center">Nenhum funcionário ativo cadastrado</p>
+                    @endforelse
+                </div>
+            </div>
 
             <div class="flex gap-4">
                 <flux:button type="submit" variant="primary">Salvar</flux:button>

@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Support\Facades\DB;
 
 class NotaFiscal extends Model
 {
@@ -26,6 +27,13 @@ class NotaFiscal extends Model
         'descricao',
         'status',
         'observacao',
+        'nfse_id',
+        'nfse_numero',
+        'nfse_codigo_verificacao',
+        'nfse_status',
+        'nfse_url_pdf',
+        'nfse_emitida_em',
+        'nfse_erro',
     ];
 
     protected function casts(): array
@@ -75,6 +83,26 @@ class NotaFiscal extends Model
 
     public static function proximoNumero(): int
     {
-        return (static::max('numero') ?? 0) + 1;
+        return DB::transaction(function () {
+            $max = static::lockForUpdate()->max('numero') ?? 0;
+            return $max + 1;
+        });
+    }
+
+    public function precisaEmitirNfse(): bool
+    {
+        return $this->tipo === 'servico'
+            && $this->status === 'emitida'
+            && is_null($this->nfse_id);
+    }
+
+    public function isNfseEmitida(): bool
+    {
+        return $this->nfse_status === 'autorizado';
+    }
+
+    public function isNfseProcessando(): bool
+    {
+        return $this->nfse_status === 'processando';
     }
 }
