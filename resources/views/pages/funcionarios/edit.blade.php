@@ -67,9 +67,9 @@ new class extends Component {
         <form wire:submit="save" class="space-y-6">
             <flux:input wire:model="nome" label="Nome" placeholder="Nome completo" required />
 
-            <flux:input wire:model="cpf" label="CPF" placeholder="000.000.000-00" />
+            <flux:input wire:model="cpf" x-mask="999.999.999-99" label="CPF" placeholder="000.000.000-00" />
 
-            <flux:input wire:model="telefone" label="Telefone" placeholder="(00) 00000-0000" />
+            <flux:input wire:model="telefone" x-mask:dynamic="$input.replace(/\D/g,'').length > 10 ? '(99) 99999-9999' : '(99) 9999-9999'" label="Telefone" placeholder="(00) 00000-0000" />
 
             <flux:input wire:model="valor_hora" label="Valor por Hora (R$)" type="number" step="0.01" min="0" placeholder="0,00" required />
 
